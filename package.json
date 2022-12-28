@@ -1,0 +1,25 @@
+{
+  "name": "calculatorwithparser",
+  "version": "1.0.0",
+  "description": "parser for calculator expression",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+  },
+  "jest": {
+    "testEnvironment": "jest-environment-node",
+    "transform": {}
+  },
+  "type": "module",
+  "keywords": [
+    "parser",
+    "calculator"
+  ],
+  "author": "Marek Gudalewicz",
+  "license": "ISC",
+  "devDependencies": {
+    "jest": "^29.0.3",
+    "peggy": "^2.0.1"
+  },
+  "dependencies": {}
+}
