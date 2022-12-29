@@ -31,49 +31,20 @@
 
 }};
 
-// Expression 
-//     = 
-//     // tags:Tag* 
-//     // {
-//     //     const result = tags.flat();
-//     //     return result;
-
-//     // }
-//      expressions:TagExpression* 
-//     {
-//         // Expression = expressions:TagExpression {
-//         const result = expressions.flat();
-//         return result;
-//     }
 
 TagExpression = 
-n1:N "<" n2:N openTagName:Name? ">" n3:N
+open:OpenTag
     enclosedString:ContentString
-n4:N "<" n5:N close:"/"? closeTagName:Name? ">" n6:N
+close:CloseTag
 {
-    if (openTagName !== closeTagName) {
-        return null;
-        throw new Error(`Open tag ${openTagName} and close tag ${closeTagName} are different`)
-    }
-    const openTag = procesTag({
-        beforeBracketSpace: n1,
-        beforeNameSpace: n2,
-        afterBracketSpace: n3,
-        close: null,
-        name: openTagName,
-    });
+    const openTagName = getTagContent(open);
+    const closeTagName = getTagContent(close);
+    if (openTagName !== closeTagName) { return null }
     const content = {
         type: CONTENT, content: enclosedString.join('')
     };
-    const closeTag = procesTag({
-        beforeBracketSpace: n4,
-        beforeNameSpace: n5,
-        afterBracketSpace: n6,
-        close,
-        name: closeTagName,
-    })
-    if (enclosedString.join('') === "") return [...openTag, ...closeTag].flat();
-    return [...openTag, content, ...closeTag].flat();
+    if (enclosedString.join('') === "") return [...open, ...close].flat();
+    return [...open, content, ...close].flat();
 } / tag:Tag {
     const tagName = getTagContent(tag);
     if (singleTagsList.includes(tagName)) {
@@ -82,22 +53,29 @@ n4:N "<" n5:N close:"/"? closeTagName:Name? ">" n6:N
     return null;
 }
 
-Tag = n1:N "<" n2:N close:"/"? tagName:Name? ">" n3:N
-      {
-        let output = [];
-        if (n1) output = [...output, ...n1]
-        output.push({type: BRACKET, content: '<'})
-        if (n2) output = [...output, ...n2]
-        if (close) output.push({type: BRACKET, content: '/'})
-        if (tagName) output.push({type: TAG, content: tagName})
-        output.push({type: BRACKET, content: '>'})
-        if (n3) output = [...output, ...n3]
-        return output.flat();
-      }
+OpenTag = n1:N "<" n2:N openTagName:Name? ">" n3:N {
+    const openTag = procesTag({
+        beforeBracketSpace: n1,
+        beforeNameSpace: n2,
+        afterBracketSpace: n3,
+        close: null,
+        name: openTagName,
+    });
+    return openTag;
+}
 
+CloseTag = n4:N "<" n5:N close:"/"? closeTagName:Name? ">" n6:N {
+    const closeTag = procesTag({
+        beforeBracketSpace: n4,
+        beforeNameSpace: n5,
+        afterBracketSpace: n6,
+        close,
+        name: closeTagName,
+    })
+    return closeTag;
+}
 
-
-
+Tag = open:OpenTag { return open } / close:CloseTag { return close }
 
 // Tag = TagBracket TagBracket / 
 //       TagBracket name:Name _ attr:Attribute* TagBracket {

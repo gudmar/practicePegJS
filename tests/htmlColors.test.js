@@ -146,7 +146,7 @@ describe('Testing htmlColors', () => {
         expect(result).toBeNull();
     })
 
-    it('Should put attribute color correctly', () => {
+    it('Should parse an attribute with no value correctly', () => {
         const input = '<b disabled>my content</b>'
         const expected = [
             { content: '<', type: BRACKET },
