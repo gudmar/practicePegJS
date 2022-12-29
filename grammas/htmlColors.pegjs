@@ -4,8 +4,11 @@
         R, TAB,
     } from "../constants/htmlColors.js";
 
-    function stringText(quotationType, value) {
+    const singleTagsList = ['br', 'hr', 'img', 'input', 'keygen', 'link', 'meta', 'param', 'source', 'track', 'wbr']
 
+    function getTagContent(parsedResult){
+        const result = parsedResult.find((item) => item.type === TAG)
+        return result?.content;
     }
 
     function procesTag({
@@ -71,7 +74,12 @@ n4:N "<" n5:N close:"/"? closeTagName:Name? ">" n6:N
     })
     if (enclosedString.join('') === "") return [...openTag, ...closeTag].flat();
     return [...openTag, content, ...closeTag].flat();
-
+} / tag:Tag {
+    const tagName = getTagContent(tag);
+    if (singleTagsList.includes(tagName)) {
+        return tag
+    }
+    return null;
 }
 
 Tag = n1:N "<" n2:N close:"/"? tagName:Name? ">" n3:N

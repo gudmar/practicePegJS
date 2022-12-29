@@ -26,33 +26,34 @@ describe('Testing htmlColors', () => {
         expect(result).toEqual(expected);
     })
 
-    // it('Should process empty closing brackets correctly', () => {
-    //     const input = '</>';
-    //     const expected = [
-    //         { content: '<', type: BRACKET },
-    //         { content: '/', type: BRACKET },
-    //         { content: '>', type: BRACKET }
-    //     ]
-    //     const result = peggy.parse(input);
-    //     expect(result).toEqual(expected);       
-    // })
+    it('Should return null for just an opening tag', () => {
+        const input = '<div>';
+        const result = peggy.parse(input);
+        expect(result).toBeNull();
+    })
 
-    // it('Should process single <div> opening tag', () => {
-    //     const input = '<div>';
-    //     const expected = [
-    //         {
-    //             content: '<', type: BRACKET,
-    //         },
-    //         {
-    //             content: 'div', type: TAG,
-    //         },
-    //         {
-    //             content: '>', type: BRACKET,
-    //         }
-    //     ]
-    //     const result = peggy.parse(input);
-    //     expect(result).toEqual(expected);      
-    // })
+    it('Should process a single tag if it is a special tag', () => {
+        const input = '<br>'
+        const expected = [
+            { content: '<', type: BRACKET },
+            { content: 'br', type: TAG },
+            { content: '>', type: BRACKET },
+        ]
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected);         
+    });
+
+    it('Should process a single closing tag if it is a special tag', () => {
+        const input = '</img>'
+        const expected = [
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'img', type: TAG },
+            { content: '>', type: BRACKET },
+        ]
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected);         
+    });
 
     it('Should process open and close tag <a></a>', () => {
         const input = '<a></a>';

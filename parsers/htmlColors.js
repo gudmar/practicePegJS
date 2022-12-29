@@ -10,8 +10,11 @@
         R, TAB,
     } from "../constants/htmlColors.js";
 
-    function stringText(quotationType, value) {
+    const singleTagsList = ['br', 'hr', 'img', 'input', 'keygen', 'link', 'meta', 'param', 'source', 'track', 'wbr']
 
+    function getTagContent(parsedResult){
+        const result = parsedResult.find((item) => item.type === TAG)
+        return result?.content;
     }
 
     function procesTag({
@@ -242,9 +245,15 @@ function peg$parse(input, options) {
     })
     if (enclosedString.join('') === "") return [...openTag, ...closeTag].flat();
     return [...openTag, content, ...closeTag].flat();
-
 };
-  var peg$f1 = function(n1, n2, close, tagName, n3) {
+  var peg$f1 = function(tag) {
+    const tagName = getTagContent(tag);
+    if (singleTagsList.includes(tagName)) {
+        return tag
+    }
+    return null;
+};
+  var peg$f2 = function(n1, n2, close, tagName, n3) {
         let output = [];
         if (n1) output = [...output, ...n1]
         output.push({type: BRACKET, content: '<'})
@@ -255,8 +264,8 @@ function peg$parse(input, options) {
         if (n3) output = [...output, ...n3]
         return output.flat();
       };
-  var peg$f2 = function() { return text() };
-  var peg$f3 = function(space) {
+  var peg$f3 = function() { return text() };
+  var peg$f4 = function(space) {
     if(space.match(/\n/)) return {
         type: NEW_LINE,
         content:'',
@@ -275,7 +284,7 @@ function peg$parse(input, options) {
     }
 
 };
-  var peg$f4 = function(newLines) {
+  var peg$f5 = function(newLines) {
     return newLines.reduce((acc, symb) => {
         if (symb) console.log('NEW LINE EXISTS')
         if (symb) acc.push(symb)
@@ -517,6 +526,15 @@ function peg$parse(input, options) {
       peg$currPos = s0;
       s0 = peg$FAILED;
     }
+    if (s0 === peg$FAILED) {
+      s0 = peg$currPos;
+      s1 = peg$parseTag();
+      if (s1 !== peg$FAILED) {
+        peg$savedPos = s0;
+        s1 = peg$f1(s1);
+      }
+      s0 = s1;
+    }
 
     return s0;
   }
@@ -559,7 +577,7 @@ function peg$parse(input, options) {
       if (s6 !== peg$FAILED) {
         s7 = peg$parseN();
         peg$savedPos = s0;
-        s0 = peg$f1(s1, s3, s4, s5, s7);
+        s0 = peg$f2(s1, s3, s4, s5, s7);
       } else {
         peg$currPos = s0;
         s0 = peg$FAILED;
@@ -625,7 +643,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f2();
+      s1 = peg$f3();
     }
     s0 = s1;
 
@@ -674,7 +692,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f3(s1);
+      s1 = peg$f4(s1);
     }
     s0 = s1;
 
@@ -692,7 +710,7 @@ function peg$parse(input, options) {
       s2 = peg$parseS();
     }
     peg$savedPos = s0;
-    s1 = peg$f4(s1);
+    s1 = peg$f5(s1);
     s0 = s1;
 
     return s0;
