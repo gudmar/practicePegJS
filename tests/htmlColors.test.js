@@ -310,6 +310,56 @@ disabled
         // !! Check data-value = 5.43
     })
 
+    it('Should process attribute value correclty: <a data-value=5 "> case', () => {
+        const i = `<a data-value=5></a>`
+        const exp = [
+            { content: '<', type: BRACKET },
+            { content: 'a', type: TAG },
+            { content: ' ', type: SPACE },
+            { content: 'data-value', type: PARAM },
+            { content: '=', type: ASSIGN },
+            { content: `5`, type: VAL },
+            { content: '>', type: BRACKET },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'a', type: TAG },
+            { content: '>', type: BRACKET },
+        ]
+        const result = peggy.parse(i);
+        expect(result).toEqual(exp);
+    })
+
+    it('Should process attribute value correclty: <a data-value=5.43 "> case', () => {
+        const i = `<a data-value=5.43></a>`
+        const exp = [
+            { content: '<', type: BRACKET },
+            { content: 'a', type: TAG },
+            { content: ' ', type: SPACE },
+            { content: 'data-value', type: PARAM },
+            { content: '=', type: ASSIGN },
+            { content: `5.43`, type: VAL },
+            { content: '>', type: BRACKET },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'a', type: TAG },
+            { content: '>', type: BRACKET },
+        ]
+        const result = peggy.parse(i);
+        expect(result).toEqual(exp);
+    })
+
+    it('Should process attribute value correclty: <a data-value=5. "> case', () => {
+        const i = `<a data-value=5.></a>`
+        const result = () => peggy.parse(i);
+        expect(result).toThrow();
+    })
+
+    it('Should process attribute value correclty: <a data-value=5.45.43 "> case', () => {
+        const i = `<a data-value=5.45.43></a>`
+        const result = () => peggy.parse(i);
+        expect(result).toThrow();
+    })
+
     it('Should process a value with quotation mark in it', () => {
         const input = '<button disabled = true width="14px" data-attr = "custom param">my content</button>'
         const expected = [

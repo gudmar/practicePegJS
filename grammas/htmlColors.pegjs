@@ -202,13 +202,27 @@ AttributeNameTail = [a-zA-Z0-9]* { return text() }
 //     // "true" / 
 //     // "false" / 
 //     // [0-9] ("." [0-9])? { return text() }
-AttributeValue = StringSingleQuoted / StringDoubleQuoted / StringTemplateQuoted / "true" / "false"
+AttributeValue = 
+    StringSingleQuoted / 
+    StringDoubleQuoted / 
+    StringTemplateQuoted /
+    FloatingPointNumber /
+    "true" / 
+    "false"
 
 StringSingleQuoted = "'" val:[^']* "'" { return val.join('') }
 
 StringDoubleQuoted = '"' val:[^"]* '"' { return val.join('') }
 
 StringTemplateQuoted = '`' val:[^`]* '`' { return val.join('') }
+
+FloatingPointNumber = int:[0-9] tail:(FloatingPointTail)? {
+    return `${int}${tail?tail:''}`
+}
+
+FloatingPointTail = dot:[.] fraction:[0-9]+ {
+    return `${dot?'.':''}${fraction?fraction.join(''):''}`
+}
 
 Dash = [-_]+ { return text() }
 
