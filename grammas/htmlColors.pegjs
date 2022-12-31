@@ -11,10 +11,25 @@
         return result?.content;
     }
 
+    function exists(param) {
+        return (param && Array.isArray(param) && param.length > 0)
+    }
+
+    function concatTail(tail) {
+        const result = tail.reduce((acc, item) => {
+            acc = `${acc}${item.join('')}`
+            return acc;
+        }, '')
+        return result;
+    }
+
     function procesTag({
         beforeBracketSpace,
         beforeNameSpace, 
         afterBracketSpace,
+        afterNameSpace,
+        afterAttributeSpace,
+        attribute,
         close,
         name,
     }) {
@@ -24,6 +39,9 @@
         if (beforeNameSpace) output = [...output, ...beforeNameSpace]
         if (close !== null) output.push({type: BRACKET, content: '/'})
         if (name) output.push({type: TAG, content: name})
+        if (exists(afterNameSpace)) output = [...output, ...afterNameSpace]
+        if (exists(attribute)) output = [...output, ...attribute]
+        if (exists(afterAttributeSpace)) output = [...output, afterAttributeSpace]
         output.push({type: BRACKET, content: '>'})
         if (afterBracketSpace) output = [...output, ...afterBracketSpace]
         return output;
@@ -40,10 +58,10 @@ close:CloseTag
     const openTagName = getTagContent(open);
     const closeTagName = getTagContent(close);
     if (openTagName !== closeTagName) { return null }
+    if (enclosedString.join('') === "") return [...open, ...close].flat();
     const content = {
         type: CONTENT, content: enclosedString.join('')
     };
-    if (enclosedString.join('') === "") return [...open, ...close].flat();
     return [...open, content, ...close].flat();
 } / tag:Tag {
     const tagName = getTagContent(tag);
@@ -53,26 +71,60 @@ close:CloseTag
     return null;
 }
 
-OpenTag = n1:N "<" n2:N openTagName:Name? ">" n3:N {
-    const openTag = procesTag({
-        beforeBracketSpace: n1,
-        beforeNameSpace: n2,
-        afterBracketSpace: n3,
-        close: null,
-        name: openTagName,
-    });
-    return openTag;
-}
+OpenTag = 
+    beforeBracketSpace:WhiteSpaces 
+    "<" 
+    beforeNameSpace:WhiteSpaces 
+    openTagName:Name? 
+    afterNameSpace:WhiteSpaces 
+    attribute:Attribute?
+    afterAttributeSpace:WhiteSpaces
+    ">" 
+    afterBracketSpace:WhiteSpaces 
+    {
+        const openTag = procesTag({
+            beforeBracketSpace,
+            beforeNameSpace,
+            afterBracketSpace,
+            afterNameSpace,
+            afterAttributeSpace,
+            attribute,
+            close: null,
+            name: openTagName,
+        });
+        return openTag;
+    }
 
-CloseTag = n4:N "<" n5:N close:"/"? closeTagName:Name? ">" n6:N {
+CloseTag = beforeBracketSpace:WhiteSpaces "<" beforeNameSpace:WhiteSpaces close:"/"? closeTagName:Name? ">" afterBracketSpace:WhiteSpaces {
     const closeTag = procesTag({
-        beforeBracketSpace: n4,
-        beforeNameSpace: n5,
-        afterBracketSpace: n6,
+        beforeBracketSpace,
+        beforeNameSpace,
+        afterBracketSpace,
         close,
         name: closeTagName,
     })
     return closeTag;
+}
+
+Attribute = name:AttributeName value:AttributeTail? {
+    let output = [{
+        type: PARAM,
+        content: name
+    }]
+    if(exists(value)) output = [...output, ...value].flat();
+    return output;
+}
+
+AttributeTail = afterAttributeSpace:WhiteSpaces? "=" beforeValueSpace:WhiteSpaces? value:AttributeValue {
+    let output = []
+    if (afterAttributeSpace && exists(afterAttributeSpace)) { output = [...output, afterAttributeSpace].flat()}
+    output.push({type:ASSIGN, content: "="});
+    if (beforeValueSpace && exists(beforeValueSpace)) { output = [...output, beforeValueSpace].flat()}
+    if (value) { output.push({
+        type: VAL,
+        content: value,
+    })}
+    return output
 }
 
 Tag = open:OpenTag { return open } / close:CloseTag { return close }
@@ -132,6 +184,34 @@ Tag = open:OpenTag { return open } / close:CloseTag { return close }
 
 ContentString = [^<>]* / "" { return text() };
 
+AttributeName = predecator:Name tail:(Dash AttributeNameTail)* {
+    const concatenatedTail = concatTail(tail)
+    return `${predecator}${concatenatedTail}`
+}
+
+AttributeNameTail = [a-zA-Z0-9]* { return text() }
+
+// AttributeValue = 
+//     // "\"" (.)* "\"" / 
+//     (a:"\'" b:[^/']* c:"\'") {
+//         const t = a + b + c;
+//         return t;
+//     }
+//     //  / 
+//     // "\`" (.)* "\`" / 
+//     // "true" / 
+//     // "false" / 
+//     // [0-9] ("." [0-9])? { return text() }
+AttributeValue = StringSingleQuoted / StringDoubleQuoted / StringTemplateQuoted / "true" / "false"
+
+StringSingleQuoted = "'" val:[^']* "'" { return val.join('') }
+
+StringDoubleQuoted = '"' val:[^"]* '"' { return val.join('') }
+
+StringTemplateQuoted = '`' val:[^`]* '`' { return val.join('') }
+
+Dash = [-_]+ { return text() }
+
 Name = [a-zA-Z]+ { return text() };
 
 _ "whitespace"
@@ -164,9 +244,8 @@ S = space:[ \t\n\r] {
 
 }
 
-N = newLines:S* {
-    return newLines.reduce((acc, symb) => {
-        if (symb) console.log('NEW LINE EXISTS')
+WhiteSpaces = whiteSpaces:S* {
+    return whiteSpaces.reduce((acc, symb) => {
         if (symb) acc.push(symb)
 
         return acc;

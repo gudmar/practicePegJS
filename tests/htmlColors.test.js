@@ -151,7 +151,7 @@ describe('Testing htmlColors', () => {
         const expected = [
             { content: '<', type: BRACKET },
             { content: 'b', type: TAG },
-            { content: '', type: SPACE },
+            { content: ' ', type: SPACE },
             { content: 'disabled', type: PARAM },
             { content: '>', type: BRACKET },
             { content: 'my content', type: CONTENT },
@@ -160,6 +160,32 @@ describe('Testing htmlColors', () => {
             { content: 'b', type: TAG },
             { content: '>', type: BRACKET },
         ]
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected);
+    })
+
+    it('Should pares an attribute with no value with white space elements correctly', () => {
+        const input = `<b 
+disabled
+  >my content</b>`
+        const expected = [
+            { content: '<', type: BRACKET },
+            { content: 'b', type: TAG },
+            { content: ' ', type: SPACE },
+            { content: '', type: NEW_LINE },
+            { content: 'disabled', type: PARAM },
+            { content: '', type: NEW_LINE },
+            { content: ' ', type: SPACE },
+            { content: ' ', type: SPACE },
+            { content: '>', type: BRACKET },
+            { content: 'my content', type: CONTENT },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'b', type: TAG },
+            { content: '>', type: BRACKET },
+        ]
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected);
     })
 
     it('Should put attribute with its value color correctly', () => {
@@ -167,11 +193,11 @@ describe('Testing htmlColors', () => {
         const expected = [
             { content: '<', type: BRACKET },
             { content: 'b', type: TAG },
-            { content: '', type: SPACE },
+            { content: ' ', type: SPACE },
             { content: 'disabled', type: PARAM },
-            { content: '', type: SPACE },
+            { content: ' ', type: SPACE },
             { content: '=', type: ASSIGN },
-            { content: '', type: SPACE },
+            { content: ' ', type: SPACE },
             { content: 'true', type: VAL },
             { content: '>', type: BRACKET },
             { content: 'my content', type: CONTENT },
@@ -180,6 +206,108 @@ describe('Testing htmlColors', () => {
             { content: 'b', type: TAG },
             { content: '>', type: BRACKET },
         ]
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected);
+    })
+
+    it('Should process attributeName correclty: a data-_-value=\'val\'', () => {
+        const i1 = `<a data-_-value = true></a>`
+        const exp1 = [
+            { content: '<', type: BRACKET },
+            { content: 'a', type: TAG },
+            { content: ' ', type: SPACE },
+            { content: 'data-_-value', type: PARAM },
+            { content: ' ', type: SPACE },
+            { content: '=', type: ASSIGN },
+            { content: ' ', type: SPACE },
+            { content: 'true', type: VAL },
+            { content: '>', type: BRACKET },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'a', type: TAG },
+            { content: '>', type: BRACKET },
+
+        ]
+        const result1 = peggy.parse(i1);
+        expect(result1).toEqual(exp1);
+    })
+
+    it('Should process attributeName correclty: data-value_1-2-3=true: no spaces separating = symbol', () => {
+        const i2 = `<b data-value_1-2-3=true></b>`
+        const exp2 = [
+            { content: '<', type: BRACKET },
+            { content: 'b', type: TAG },
+            { content: ' ', type: SPACE },
+            { content: 'data-value_1-2-3', type: PARAM },
+            { content: '=', type: ASSIGN },
+            { content: 'true', type: VAL },
+            { content: '>', type: BRACKET },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'b', type: TAG },
+            { content: '>', type: BRACKET },
+        ]
+        const result2 = peggy.parse(i2);
+        expect(result2).toEqual(exp2);
+    })
+
+    it("Should process attribute value correclty: data-value='val' case", () => {
+        const i1 = `<a data-value='val'></a>`
+        const exp1 = [
+            { content: '<', type: BRACKET },
+            { content: 'a', type: TAG },
+            { content: ' ', type: SPACE },
+            { content: 'data-value', type: PARAM },
+            { content: '=', type: ASSIGN },
+            { content: 'val', type: VAL },
+            { content: '>', type: BRACKET },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'a', type: TAG },
+            { content: '>', type: BRACKET },
+        ]
+        const result1 = peggy.parse(i1);
+        expect(result1).toEqual(exp1);
+    })
+    
+        it('Should process attribute value correclty: data-value="val" case', () => {
+        const i2 = `<a data-value="val"></a>`
+        const exp2 = [
+            { content: '<', type: BRACKET },
+            { content: 'a', type: TAG },
+            { content: ' ', type: SPACE },
+            { content: 'data-value', type: PARAM },
+            { content: '=', type: ASSIGN },
+            { content: 'val', type: VAL },
+            { content: '>', type: BRACKET },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'a', type: TAG },
+            { content: '>', type: BRACKET },
+        ]
+        const result2 = peggy.parse(i2);
+        expect(result2).toEqual(exp2);
+    })
+
+    it('Should process attribute value correclty: <a data-value="val \'quote\' "> case', () => {
+        const i3 = `<a data-value="val 'quote' "></a>`
+        const exp3 = [
+            { content: '<', type: BRACKET },
+            { content: 'a', type: TAG },
+            { content: ' ', type: SPACE },
+            { content: 'data-value', type: PARAM },
+            { content: '=', type: ASSIGN },
+            { content: `val 'quote' `, type: VAL },
+            { content: '>', type: BRACKET },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'a', type: TAG },
+            { content: '>', type: BRACKET },
+        ]
+        const result3 = peggy.parse(i3);
+        expect(result3).toEqual(exp3);
+
+        // !! Check data-value = 5.43
     })
 
     it('Should process a value with quotation mark in it', () => {
