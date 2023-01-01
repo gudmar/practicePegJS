@@ -29,7 +29,7 @@
         afterBracketSpace,
         afterNameSpace,
         afterAttributeSpace,
-        attribute,
+        attributes,
         close,
         name,
     }) {
@@ -40,7 +40,7 @@
         if (close !== null) output.push({type: BRACKET, content: '/'})
         if (name) output.push({type: TAG, content: name})
         if (exists(afterNameSpace)) output = [...output, ...afterNameSpace]
-        if (exists(attribute)) output = [...output, ...attribute]
+        if (exists(attributes)) output = [...output, ...attributes]
         if (exists(afterAttributeSpace)) output = [...output, afterAttributeSpace]
         output.push({type: BRACKET, content: '>'})
         if (afterBracketSpace) output = [...output, ...afterBracketSpace]
@@ -77,8 +77,8 @@ OpenTag =
     beforeNameSpace:WhiteSpaces 
     openTagName:Name? 
     afterNameSpace:WhiteSpaces 
-    attribute:Attribute?
-    afterAttributeSpace:WhiteSpaces
+    attributes:AttributeChainElement*
+    // afterAttributeSpace:WhiteSpaces
     ">" 
     afterBracketSpace:WhiteSpaces 
     {
@@ -87,8 +87,8 @@ OpenTag =
             beforeNameSpace,
             afterBracketSpace,
             afterNameSpace,
-            afterAttributeSpace,
-            attribute,
+            // afterAttributeSpace,
+            attributes,
             close: null,
             name: openTagName,
         });
@@ -104,6 +104,12 @@ CloseTag = beforeBracketSpace:WhiteSpaces "<" beforeNameSpace:WhiteSpaces close:
         name: closeTagName,
     })
     return closeTag;
+}
+
+AttributeChainElement = attr:Attribute space:WhiteSpaces? {
+    let result = [...attr];
+    if (exists(space)) result = [...result, ...space]
+    return result;
 }
 
 Attribute = name:AttributeName value:AttributeTail? {
