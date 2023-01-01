@@ -365,17 +365,22 @@ disabled
         const expected = [
             { content: '<', type: BRACKET },
             { content: 'button', type: TAG },
-            { content: '', type: SPACE },
+            { content: ' ', type: SPACE },
             { content: 'disabled', type: PARAM },
-            { content: '', type: SPACE },
+            { content: ' ', type: SPACE },
             { content: '=', type: ASSIGN },
-            { content: '', type: SPACE },
+            { content: ' ', type: SPACE },
             { content: 'true', type: VAL },
-            { content: 'data-attr', type: PARAM },
-            { content: '', type: SPACE },
+            { content: ' ', type: SPACE },
+            { content: 'width', type: PARAM },
             { content: '=', type: ASSIGN },
-            { content: '', type: SPACE },
-            { content: '"custom param"', type: VAL },
+            { content: '14px', type: VAL },
+            { content: ' ', type: SPACE },
+            { content: 'data-attr', type: PARAM },
+            { content: ' ', type: SPACE },
+            { content: '=', type: ASSIGN },
+            { content: ' ', type: SPACE },
+            { content: 'custom param', type: VAL },
             { content: '>', type: BRACKET },
             { content: 'my content', type: CONTENT },
             { content: '<', type: BRACKET },
@@ -383,20 +388,29 @@ disabled
             { content: 'button', type: TAG },
             { content: '>', type: BRACKET },
         ]
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected);
     })
 
     it('Should proces param with nested quotation correctly', () => {
-        const input = '<div data-attr = \'this is some "quoted" value\'>'
+        const input = '<div data-attr = \'this is some "quoted" value\'></div>'
         const expected = [
             { content: '<', type: BRACKET },
             { content: 'div', type: TAG },
-            { content: '', type: SPACE },
+            { content: ' ', type: SPACE },
             { content: 'data-attr', type: PARAM },
-            { content: '', type: SPACE },
+            { content: ' ', type: SPACE },
             { content: '=', type: ASSIGN },
-            { content: '', type: SPACE },
+            { content: ' ', type: SPACE },
             { content: 'this is some "quoted" value', type: VAL },
+            { content: '>', type: BRACKET },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
         ]
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected);
     })
 
     it('Should proces comments correctly', () => {
@@ -415,6 +429,245 @@ disabled
             { content: 'comment-->', type: COMMENT },
         ]
     })
+
+    it('Should process comment when between open and close tag', () => {
+        const input = `<div><!--comment--></div>`
+        const expected = [
+            { content: '<', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+            { content: '<!--comment-->', type: COMMENT },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+
+        ]
+    })
+    it('Should process multiple comments when between open and close tag', () => {
+        const input = `<div><!--comment--><!--comment-2--></div>`
+        const expected = [
+            { content: '<', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+            { content: '<!--comment-->', type: COMMENT },
+            { content: '<!--comment-2-->', type: COMMENT },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+
+        ]
+    })
+    it('Should process multiple comments with text when between open and close tag', () => {
+        const input = `<div><!--comment-->some text<!--comment-2--></div>`
+        const expected = [
+            { content: '<', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+            { content: '<!--comment-->', type: COMMENT },
+            { content: 'some text', type: CONTENT },
+            { content: '<!--comment-2-->', type: COMMENT },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+
+        ]
+    })
+
+    it('Should process multiple comments with multiple text when between open and close tag', () => {
+        const input = `<div>
+my content
+<!--comment-->
+some text
+<!--comment-2-->
+my content
+</div>`
+        const expected = [
+            { content: '<', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+            { content: 'my content', type: CONTENT },
+            { content: '<!--comment-->', type: COMMENT },
+            { content: 'some text', type: CONTENT },
+            { content: '<!--comment-2-->', type: COMMENT },
+            { content: 'my content', type: CONTENT },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+
+        ]
+    })
+
+    it('Should process comment when placed between close and opening tag', () => {
+        const input = `<div></div><!--comment--><div></div>`
+        const expected = [
+            { content: '<', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+            { content: '<!--comment-->', type: COMMENT },
+            { content: '<', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+
+        ]
+    })
+
+    it('Should process multiple comment when placed between close and opening tag', () => {
+        const input = `<div></div><!--comment--><!--comment-2--><div></div>`
+        const expected = [
+            { content: '<', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+            { content: '<!--comment-->', type: COMMENT },
+            { content: '<!--comment-2-->', type: COMMENT },
+            { content: '<', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+
+        ]
+    })
+
+    it('Should process a element with nested elements', () => {
+        const input = ('<div><span><i>italic</i><q>quoted</q></span><ul></ul></div>');
+        expected = [
+            { content: '<', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+
+            { content: '<', type: BRACKET },
+            { content: 'span', type: TAG },
+            { content: '>', type: BRACKET },
+
+            { content: '<', type: BRACKET },
+            { content: 'i', type: TAG },
+            { content: '>', type: BRACKET },
+            { content: 'italic', type: CONTENT },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'i', type: TAG },
+            { content: '>', type: BRACKET },
+
+            { content: '<', type: BRACKET },
+            { content: 'q', type: TAG },
+            { content: '>', type: BRACKET },
+            { content: 'quoted', type: CONTENT },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'q', type: TAG },
+            { content: '>', type: BRACKET },
+
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'span', type: TAG },
+            { content: '>', type: BRACKET },
+
+            { content: '<', type: BRACKET },
+            { content: 'ul', type: TAG },
+            { content: '>', type: BRACKET },
+
+            { content: '<', type: BRACKET },
+            { content: '/ul', type: TAG },
+            { content: '>', type: BRACKET },
+
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+
+        ]
+    })
+
+
+    it('Should process a element with nested elements and attributes', () => {
+        const input = (
+            `<div contenteditable>
+<span data-attr='this is some "quoted" value' data-id=1><i><!--comment-->italic</i><q>quoted</q></span>
+<ul></ul></div>`
+        );
+
+
+
+        expected = [
+            { content: '<', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: ' ', type: SPACE},
+            { content: 'contenteditable', type: PARAM },
+            { content: '>', type: BRACKET },
+
+            { content: '', type: NEW_LINE },
+
+            { content: '<', type: BRACKET },
+            { content: 'span', type: TAG },
+            { content: ' ', type: SPACE },
+            { content: 'data-attr', type: PARAM },
+            { content: '=', type: ASSIGN },
+            { content: 'this is some "quoted" value', type: VAL },
+            { content: ' ', type: SPACE },
+            { content: 'data-id', type: PARAM },
+            { content: '=', type: ASSIGN },
+            { content: 1, type: VAL },
+            { content: '>', type: BRACKET },
+
+            { content: '<', type: BRACKET },
+            { content: 'i', type: TAG },
+            { content: '>', type: BRACKET },
+            { content: '<!--comment->', type: COMMENT},
+            { content: 'italic', type: CONTENT },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'i', type: TAG },
+            { content: '>', type: BRACKET },
+
+            { content: '<', type: BRACKET },
+            { content: 'q', type: TAG },
+            { content: '>', type: BRACKET },
+            { content: 'quoted', type: CONTENT },
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'q', type: TAG },
+            { content: '>', type: BRACKET },
+
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'span', type: TAG },
+            { content: '>', type: BRACKET },
+
+            { content: '', type: NEW_LINE },
+            { content: '<', type: BRACKET },
+            { content: 'ul', type: TAG },
+            { content: '>', type: BRACKET },
+
+            { content: '<', type: BRACKET },
+            { content: '/ul', type: TAG },
+            { content: '>', type: BRACKET },
+
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
+
+        ]
+    })
+
 
     it('Should process a longer fragment correcty', () => {
         const input = `
@@ -479,4 +732,6 @@ disabled
 
         ]
     })
+
+    
 });
