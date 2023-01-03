@@ -418,16 +418,28 @@ disabled
         const expected = [
             { content: '<!--This is a comment-->', type: COMMENT },
         ]
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected);
+    })
+
+    it('Should proces commented html correctly', () => {
+        const input = '<!--<div></div>-->'
+        const expected = [
+            { content: '<!--<div></div>-->', type: COMMENT },
+        ]
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected)
     })
 
     it('Should process multiline comments corectly', () => {
         const input = `<!--This is a multiline
-                            comment-->`
+comment-->`
         const expected = [
-            { content: '<!--This is a multiline', type: COMMENT },
-            { content: '', type: NEW_LINE },
-            { content: 'comment-->', type: COMMENT },
+            { content: `<!--This is a multiline
+comment-->`, type: COMMENT },
         ]
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected)
     })
 
     it('Should process comment when between open and close tag', () => {
@@ -441,8 +453,10 @@ disabled
             { content: '/', type: BRACKET },
             { content: 'div', type: TAG },
             { content: '>', type: BRACKET },
-
         ]
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected)
+
     })
     it('Should process multiple comments when between open and close tag', () => {
         const input = `<div><!--comment--><!--comment-2--></div>`
@@ -548,7 +562,7 @@ my content
 
     it('Should process a element with nested elements', () => {
         const input = ('<div><span><i>italic</i><q>quoted</q></span><ul></ul></div>');
-        expected = [
+        const expected = [
             { content: '<', type: BRACKET },
             { content: 'div', type: TAG },
             { content: '>', type: BRACKET },
@@ -606,7 +620,7 @@ my content
 
 
 
-        expected = [
+        const expected = [
             { content: '<', type: BRACKET },
             { content: 'div', type: TAG },
             { content: ' ', type: SPACE},

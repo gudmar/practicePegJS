@@ -28,7 +28,7 @@
         beforeNameSpace, 
         afterBracketSpace,
         afterNameSpace,
-        afterAttributeSpace,
+        // afterAttributeSpace,
         attributes,
         close,
         name,
@@ -41,7 +41,7 @@
         if (name) output.push({type: TAG, content: name})
         if (exists(afterNameSpace)) output = [...output, ...afterNameSpace]
         if (exists(attributes)) output = [...output, ...attributes]
-        if (exists(afterAttributeSpace)) output = [...output, afterAttributeSpace]
+        // if (exists(afterAttributeSpace)) output = [...output, afterAttributeSpace]
         output.push({type: BRACKET, content: '>'})
         if (afterBracketSpace) output = [...output, ...afterBracketSpace]
         return output;
@@ -49,20 +49,25 @@
 
 }};
 
+Expression = Comment / TagExpression;
+
 
 TagExpression = 
 open:OpenTag
-    enclosedString:ContentString
+    // enclosedString:ContentString
+    contentNode:ContentNode
 close:CloseTag
 {
     const openTagName = getTagContent(open);
     const closeTagName = getTagContent(close);
     if (openTagName !== closeTagName) { return null }
-    if (enclosedString.join('') === "") return [...open, ...close].flat();
-    const content = {
-        type: CONTENT, content: enclosedString.join('')
-    };
-    return [...open, content, ...close].flat();
+    // if (enclosedString.join('') === "") return [...open, ...close].flat();
+    if (contentNode.join('') === "") return [...open, ...close].flat();
+    // const content = {
+    //     type: CONTENT, content: enclosedString.join('')
+    // };
+    return [...open, ...contentNode, ...close].flat();
+    // return [...open, content, ...close].flat();
 } / tag:Tag {
     const tagName = getTagContent(tag);
     if (singleTagsList.includes(tagName)) {
@@ -71,14 +76,21 @@ close:CloseTag
     return null;
 }
 
+ContentNode = 
+    !'<!--' text:ContentString {
+        console.log('ContentNode', text.join(''))
+        if (text.join('') === '') return [];
+        return [{ type: CONTENT, content: text.join('')}]
+    } / 
+    comment:Comment { return comment }
+
 OpenTag = 
     beforeBracketSpace:WhiteSpaces 
-    "<" 
+    "<" !'!'
     beforeNameSpace:WhiteSpaces 
     openTagName:Name? 
     afterNameSpace:WhiteSpaces 
     attributes:AttributeChainElement*
-    // afterAttributeSpace:WhiteSpaces
     ">" 
     afterBracketSpace:WhiteSpaces 
     {
@@ -87,24 +99,33 @@ OpenTag =
             beforeNameSpace,
             afterBracketSpace,
             afterNameSpace,
-            // afterAttributeSpace,
             attributes,
             close: null,
             name: openTagName,
         });
+        console.log('OpenTag', openTag)
         return openTag;
     }
 
-CloseTag = beforeBracketSpace:WhiteSpaces "<" beforeNameSpace:WhiteSpaces close:"/"? closeTagName:Name? ">" afterBracketSpace:WhiteSpaces {
-    const closeTag = procesTag({
-        beforeBracketSpace,
-        beforeNameSpace,
-        afterBracketSpace,
-        close,
-        name: closeTagName,
-    })
-    return closeTag;
-}
+CloseTag = 
+    beforeBracketSpace:WhiteSpaces 
+    "<" !"!" 
+    beforeNameSpace:WhiteSpaces 
+    close:"/"? 
+    closeTagName:Name? 
+    ">" 
+    afterBracketSpace:WhiteSpaces 
+    {
+        const closeTag = procesTag({
+            beforeBracketSpace,
+            beforeNameSpace,
+            afterBracketSpace,
+            close,
+            name: closeTagName,
+        })
+        console.log('CloseTag', closeTag)
+        return closeTag;
+    }
 
 AttributeChainElement = attr:Attribute space:WhiteSpaces? {
     let result = [...attr];
@@ -135,59 +156,6 @@ AttributeTail = afterAttributeSpace:WhiteSpaces? "=" beforeValueSpace:WhiteSpace
 
 Tag = open:OpenTag { return open } / close:CloseTag { return close }
 
-// Tag = TagBracket TagBracket / 
-//       TagBracket name:Name _ attr:Attribute* TagBracket {
-//         console.log('Tag', name, attr)
-//         const output = [];
-//         if (name) output.push({
-//             type: TAG,
-//             content: name,
-//         })
-//         if (attr) output.push({
-//             type: PARAM,
-//             content: attr,
-//         })
-//         return output;
-//       }
-
-// Attribute = attName:Name { return text() }
-// // Attribute = attName:Name _ val:( _ Assign _ Value?) {
-
-// // }
-
-// TagBracket = ob:'<' / cb:'>' / cl: '<' _ '/' {
-//     console.log('TagBracket', ob, cb, cl)
-//     if (cl) {
-//         return [
-//            { type: BRACKET, content: '<' },
-//            { type: BRACKET, content: '/' }
-//         ]
-//     }
-//     return [{
-//         type: BRACKET,
-//         content: ob | cb
-//     }]
-// }
-
-// // Value = String / Boolean { return text() }
-
-// // String = "\""str:StrText"\"" / "\'"str1:StrText"\'" / "\`"str2:StrText"\"" {
-// //     console.log('String', str, str1, str2)
-// //     return text();    
-// // }
-
-// // StrText = [.]* { 
-// //     console.log('String', text())
-// //     return text() 
-// // }
-
-// // Boolean = "true" / "false" {  
-// //     console.log('boolean', text())
-// //     return text() 
-// // }
-
-// Assign = '=' { return text() }
-
 ContentString = [^<>]* / "" { return text() };
 
 AttributeName = predecator:Name tail:(Dash AttributeNameTail)* {
@@ -197,17 +165,6 @@ AttributeName = predecator:Name tail:(Dash AttributeNameTail)* {
 
 AttributeNameTail = [a-zA-Z0-9]* { return text() }
 
-// AttributeValue = 
-//     // "\"" (.)* "\"" / 
-//     (a:"\'" b:[^/']* c:"\'") {
-//         const t = a + b + c;
-//         return t;
-//     }
-//     //  / 
-//     // "\`" (.)* "\`" / 
-//     // "true" / 
-//     // "false" / 
-//     // [0-9] ("." [0-9])? { return text() }
 AttributeValue = 
     StringSingleQuoted / 
     StringDoubleQuoted / 
@@ -229,6 +186,24 @@ FloatingPointNumber = int:[0-9] tail:(FloatingPointTail)? {
 FloatingPointTail = dot:[.] fraction:[0-9]+ {
     return `${dot?'.':''}${fraction?fraction.join(''):''}`
 }
+
+Comment = '<!--' content:(!"-->" i:. {return i})* '-->' {
+    const result = [
+        {type: COMMENT, content: `<!--${content.join('')}-->`}
+    ];
+    console.log('Comment', result)
+    return result;
+}
+
+// Comment = '<!--' content:TextUntilCommentTermination '-->' {
+//     return [
+//         {type: COMMENT, content: `<!--${content}-->`}
+//     ]
+// }
+
+TextUntilCommentTermination = content:(!CommentTerminationAhead .)* { return content.map(_ => _[1])}
+
+CommentTerminationAhead = . ('-->')
 
 Dash = [-_]+ { return text() }
 
