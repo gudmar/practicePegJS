@@ -456,7 +456,6 @@ comment-->`, type: COMMENT },
         ]
         const result = peggy.parse(input);
         expect(result).toEqual(expected)
-
     })
     it('Should process multiple comments when between open and close tag', () => {
         const input = `<div><!--comment--><!--comment-2--></div>`
@@ -470,8 +469,10 @@ comment-->`, type: COMMENT },
             { content: '/', type: BRACKET },
             { content: 'div', type: TAG },
             { content: '>', type: BRACKET },
-
         ]
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected)
+
     })
     it('Should process multiple comments with text when between open and close tag', () => {
         const input = `<div><!--comment-->some text<!--comment-2--></div>`
@@ -486,8 +487,10 @@ comment-->`, type: COMMENT },
             { content: '/', type: BRACKET },
             { content: 'div', type: TAG },
             { content: '>', type: BRACKET },
-
         ]
+
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected)
     })
 
     it('Should process multiple comments with multiple text when between open and close tag', () => {
@@ -511,8 +514,13 @@ my content
             { content: '/', type: BRACKET },
             { content: 'div', type: TAG },
             { content: '>', type: BRACKET },
-
         ]
+                        // const peggy = {
+        //     SyntaxError: peg$SyntaxError,
+        //     parse: peg$parse
+        //   }
+          
+        //   export { peggy };
     })
 
     it('Should process comment when placed between close and opening tag', () => {

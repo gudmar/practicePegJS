@@ -55,7 +55,7 @@ Expression = Comment / TagExpression;
 TagExpression = 
 open:OpenTag
     // enclosedString:ContentString
-    contentNode:ContentNode
+    contentNode:ContentNode*
 close:CloseTag
 {
     const openTagName = getTagContent(open);
@@ -77,12 +77,14 @@ close:CloseTag
 }
 
 ContentNode = 
-    !'<!--' text:ContentString {
-        console.log('ContentNode', text.join(''))
-        if (text.join('') === '') return [];
-        return [{ type: CONTENT, content: text.join('')}]
-    } / 
-    comment:Comment { return comment }
+    comment:Comment { return comment === null ? [] : comment } /
+    //!'<!--' 
+    contentString:ContentString {
+        console.log('ContentNode', contentString)
+        if (contentString === '') return [];
+        return [{ type: CONTENT, content: contentString}]
+    } 
+
 
 OpenTag = 
     beforeBracketSpace:WhiteSpaces 
@@ -156,7 +158,11 @@ AttributeTail = afterAttributeSpace:WhiteSpaces? "=" beforeValueSpace:WhiteSpace
 
 Tag = open:OpenTag { return open } / close:CloseTag { return close }
 
-ContentString = [^<>]* / "" { return text() };
+// ContentString = [^<>]+ / "" { return text() };
+ContentString = [^<>]+ { return text() };
+// ContentString = !"<" !">" t:.+ { return t.join('')} / & "<" {return ''}
+// Here is the problem of no compiling. Attempt to match '' or a non 
+// input consuming operator is a disaster
 
 AttributeName = predecator:Name tail:(Dash AttributeNameTail)* {
     const concatenatedTail = concatTail(tail)
