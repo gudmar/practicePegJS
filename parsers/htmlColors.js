@@ -29,30 +29,53 @@
         return result;
     }
 
+    function getNewLine() { return {type: NEW_LINE, content:''} }
+    function getLt() { return { type: BRACKET, content: '<'} }
+    function getGt() { return { type: BRACKET, content: '>'} }
+    function getSlash() { return { type: BRACKET, content: '/'} }
+    function getTag(tag) { 
+        if (!tag) return null;
+        return { type: TAG, content: tag} 
+    }
+    function getComment(content) { return {type: COMMENT, content: `<!--${content.join('')}-->`} }
+    function getSpace() { return { type: SPACE, content: ' '}}
+    function getTabulation() { return { type: TAB, content: '/t'}}
+    function getReturnC() { return { type: TAB, content: '/r'}}
+
+    function buildParseArray(arr) {
+        const result = arr.reduce((acc, item) => {
+            if (exists(item)) {
+                acc = [ ...acc, ...item ]
+                return acc;
+            }
+            if (!Array.isArray(item) && item) { acc.push(item)}
+            return acc;
+        }, [])
+        return result;
+    }
+
     function procesTag({
         beforeBracketSpace,
         beforeNameSpace, 
         afterBracketSpace,
         afterNameSpace,
-        // afterAttributeSpace,
         attributes,
         close,
         name,
     }) {
-        let output = [];
-        if (beforeBracketSpace) output = [...output, ...beforeBracketSpace]
-        output.push({type: BRACKET, content: '<'})
-        if (beforeNameSpace) output = [...output, ...beforeNameSpace]
-        if (close !== null) output.push({type: BRACKET, content: '/'})
-        if (name) output.push({type: TAG, content: name})
-        if (exists(afterNameSpace)) output = [...output, ...afterNameSpace]
-        if (exists(attributes)) output = [...output, ...attributes]
-        // if (exists(afterAttributeSpace)) output = [...output, afterAttributeSpace]
-        output.push({type: BRACKET, content: '>'})
-        if (afterBracketSpace) output = [...output, ...afterBracketSpace]
-        return output;
+        const result = buildParseArray([
+            beforeBracketSpace,
+            getLt(),
+            beforeNameSpace,
+            close ? getSlash() : null,
+            getTag(name),
+            afterNameSpace,
+            attributes,
+            getGt(),
+            afterBracketSpace,
+        ])
+        return result
     }
-
 
 function peg$subclass(child, parent) {
   function C() { this.constructor = child; }
@@ -246,6 +269,7 @@ function peg$parse(input, options) {
   var peg$r7 = /^[\-_]/;
   var peg$r8 = /^[a-zA-Z]/;
   var peg$r9 = /^[ \t\n\r]/;
+  var peg$r10 = /^[\n]/;
 
   var peg$e0 = peg$literalExpectation("<", false);
   var peg$e1 = peg$literalExpectation("!", false);
@@ -271,18 +295,14 @@ function peg$parse(input, options) {
   var peg$e21 = peg$classExpectation([["a", "z"], ["A", "Z"]], false, false);
   var peg$e22 = peg$otherExpectation("whitespace");
   var peg$e23 = peg$classExpectation([" ", "\t", "\n", "\r"], false, false);
+  var peg$e24 = peg$classExpectation(["\n"], false, false);
 
   var peg$f0 = function(open, contentNode, close) {
     const openTagName = getTagContent(open);
     const closeTagName = getTagContent(close);
     if (openTagName !== closeTagName) { return null }
-    // if (enclosedString.join('') === "") return [...open, ...close].flat();
     if (contentNode.join('') === "") return [...open, ...close].flat();
-    // const content = {
-    //     type: CONTENT, content: enclosedString.join('')
-    // };
     return [...open, ...contentNode, ...close].flat();
-    // return [...open, content, ...close].flat();
 };
   var peg$f1 = function(tag) {
     const tagName = getTagContent(tag);
@@ -291,12 +311,12 @@ function peg$parse(input, options) {
     }
     return null;
 };
-  var peg$f2 = function(comment) { return comment === null ? [] : comment };
-  var peg$f3 = function(contentString) {
-        console.log('ContentNode', contentString)
-        if (contentString === '') return [];
-        return [{ type: CONTENT, content: contentString}]
-    };
+  var peg$f2 = function(nl1, comment, nl2) { return comment === null ? [] : comment };
+  var peg$f3 = function(nl3, contentString, nl4) {
+            console.log('ContentNode', contentString)
+            if (contentString === '') return [];
+            return [{ type: CONTENT, content: contentString}]
+        };
   var peg$f4 = function(beforeBracketSpace, beforeNameSpace, openTagName, afterNameSpace, attributes, afterBracketSpace) {
         const openTag = procesTag({
             beforeBracketSpace,
@@ -364,35 +384,26 @@ function peg$parse(input, options) {
 };
   var peg$f19 = function(i) {return i};
   var peg$f20 = function(content) {
-    const result = [
-        {type: COMMENT, content: `<!--${content.join('')}-->`}
-    ];
+    const result = [ getComment(content) ];
     console.log('Comment', result)
     return result;
 };
   var peg$f21 = function(content) { return content.map(_ => _[1])};
   var peg$f22 = function() { return text() };
   var peg$f23 = function() { return text() };
-  var peg$f24 = function(space) {
-    if(space.match(/\n/)) return {
+  var peg$f24 = function() {
+    return {
         type: NEW_LINE,
-        content:'',
+        content: '',
     }
-    if(space === " ") return {
-        type: SPACE,
-        content: ' ',
-    }
-    if(space.match(/\t/)) return {
-        type: TAB,
-        content: "/t"
-    }
-    if(space.match(/\r/)) return {
-        type: TAB,
-        content: "/r"
-    }
-
 };
-  var peg$f25 = function(whiteSpaces) {
+  var peg$f25 = function(space) {
+    if(space.match(/\n/)) return getNewLine();
+    if(space === " ") return getSpace();
+    if(space.match(/\t/)) return getTabulation();
+    if(space.match(/\r/)) return getReturnC();
+};
+  var peg$f26 = function(whiteSpaces) {
     return whiteSpaces.reduce((acc, symb) => {
         if (symb) acc.push(symb)
 
@@ -603,23 +614,51 @@ function peg$parse(input, options) {
   }
 
   function peg$parseContentNode() {
-    var s0, s1;
+    var s0, s1, s2, s3, s4;
 
     s0 = peg$currPos;
-    s1 = peg$parseComment();
-    if (s1 !== peg$FAILED) {
-      peg$savedPos = s0;
-      s1 = peg$f2(s1);
+    s1 = [];
+    s2 = peg$parseNewLine();
+    while (s2 !== peg$FAILED) {
+      s1.push(s2);
+      s2 = peg$parseNewLine();
     }
-    s0 = s1;
+    s2 = peg$parseComment();
+    if (s2 !== peg$FAILED) {
+      s3 = [];
+      s4 = peg$parseNewLine();
+      while (s4 !== peg$FAILED) {
+        s3.push(s4);
+        s4 = peg$parseNewLine();
+      }
+      peg$savedPos = s0;
+      s0 = peg$f2(s1, s2, s3);
+    } else {
+      peg$currPos = s0;
+      s0 = peg$FAILED;
+    }
     if (s0 === peg$FAILED) {
       s0 = peg$currPos;
-      s1 = peg$parseContentString();
-      if (s1 !== peg$FAILED) {
-        peg$savedPos = s0;
-        s1 = peg$f3(s1);
+      s1 = [];
+      s2 = peg$parseNewLine();
+      while (s2 !== peg$FAILED) {
+        s1.push(s2);
+        s2 = peg$parseNewLine();
       }
-      s0 = s1;
+      s2 = peg$parseContentString();
+      if (s2 !== peg$FAILED) {
+        s3 = [];
+        s4 = peg$parseNewLine();
+        while (s4 !== peg$FAILED) {
+          s3.push(s4);
+          s4 = peg$parseNewLine();
+        }
+        peg$savedPos = s0;
+        s0 = peg$f3(s1, s2, s3);
+      } else {
+        peg$currPos = s0;
+        s0 = peg$FAILED;
+      }
     }
 
     return s0;
@@ -1544,6 +1583,26 @@ function peg$parse(input, options) {
     return s0;
   }
 
+  function peg$parseNewLine() {
+    var s0, s1;
+
+    s0 = peg$currPos;
+    if (peg$r10.test(input.charAt(peg$currPos))) {
+      s1 = input.charAt(peg$currPos);
+      peg$currPos++;
+    } else {
+      s1 = peg$FAILED;
+      if (peg$silentFails === 0) { peg$fail(peg$e24); }
+    }
+    if (s1 !== peg$FAILED) {
+      peg$savedPos = s0;
+      s1 = peg$f24();
+    }
+    s0 = s1;
+
+    return s0;
+  }
+
   function peg$parseS() {
     var s0, s1;
 
@@ -1557,7 +1616,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f24(s1);
+      s1 = peg$f25(s1);
     }
     s0 = s1;
 
@@ -1575,7 +1634,7 @@ function peg$parse(input, options) {
       s2 = peg$parseS();
     }
     peg$savedPos = s0;
-    s1 = peg$f25(s1);
+    s1 = peg$f26(s1);
     s0 = s1;
 
     return s0;
@@ -1600,9 +1659,9 @@ function peg$parse(input, options) {
   }
 }
 
-                const peggy = {
-            SyntaxError: peg$SyntaxError,
-            parse: peg$parse
-          }
-          
-          export { peggy };
+const peggy = {
+  SyntaxError: peg$SyntaxError,
+  parse: peg$parse
+}
+
+export { peggy };

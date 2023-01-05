@@ -505,16 +505,24 @@ my content
             { content: '<', type: BRACKET },
             { content: 'div', type: TAG },
             { content: '>', type: BRACKET },
+            { content: '', type: NEW_LINE },
             { content: 'my content', type: CONTENT },
+            { content: '', type: NEW_LINE },
             { content: '<!--comment-->', type: COMMENT },
+            { content: '', type: NEW_LINE },
             { content: 'some text', type: CONTENT },
+            { content: '', type: NEW_LINE },
             { content: '<!--comment-2-->', type: COMMENT },
+            { content: '', type: NEW_LINE },
             { content: 'my content', type: CONTENT },
+            { content: '', type: NEW_LINE },
             { content: '<', type: BRACKET },
             { content: '/', type: BRACKET },
             { content: 'div', type: TAG },
             { content: '>', type: BRACKET },
         ]
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected)
                         // const peggy = {
         //     SyntaxError: peg$SyntaxError,
         //     parse: peg$parse

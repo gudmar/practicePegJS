@@ -23,30 +23,53 @@
         return result;
     }
 
+    function getNewLine() { return {type: NEW_LINE, content:''} }
+    function getLt() { return { type: BRACKET, content: '<'} }
+    function getGt() { return { type: BRACKET, content: '>'} }
+    function getSlash() { return { type: BRACKET, content: '/'} }
+    function getTag(tag) { 
+        if (!tag) return null;
+        return { type: TAG, content: tag} 
+    }
+    function getComment(content) { return {type: COMMENT, content: `<!--${content.join('')}-->`} }
+    function getSpace() { return { type: SPACE, content: ' '}}
+    function getTabulation() { return { type: TAB, content: '/t'}}
+    function getReturnC() { return { type: TAB, content: '/r'}}
+
+    function buildParseArray(arr) {
+        const result = arr.reduce((acc, item) => {
+            if (exists(item)) {
+                acc = [ ...acc, ...item ]
+                return acc;
+            }
+            if (!Array.isArray(item) && item) { acc.push(item)}
+            return acc;
+        }, [])
+        return result;
+    }
+
     function procesTag({
         beforeBracketSpace,
         beforeNameSpace, 
         afterBracketSpace,
         afterNameSpace,
-        // afterAttributeSpace,
         attributes,
         close,
         name,
     }) {
-        let output = [];
-        if (beforeBracketSpace) output = [...output, ...beforeBracketSpace]
-        output.push({type: BRACKET, content: '<'})
-        if (beforeNameSpace) output = [...output, ...beforeNameSpace]
-        if (close !== null) output.push({type: BRACKET, content: '/'})
-        if (name) output.push({type: TAG, content: name})
-        if (exists(afterNameSpace)) output = [...output, ...afterNameSpace]
-        if (exists(attributes)) output = [...output, ...attributes]
-        // if (exists(afterAttributeSpace)) output = [...output, afterAttributeSpace]
-        output.push({type: BRACKET, content: '>'})
-        if (afterBracketSpace) output = [...output, ...afterBracketSpace]
-        return output;
+        const result = buildParseArray([
+            beforeBracketSpace,
+            getLt(),
+            beforeNameSpace,
+            close ? getSlash() : null,
+            getTag(name),
+            afterNameSpace,
+            attributes,
+            getGt(),
+            afterBracketSpace,
+        ])
+        return result
     }
-
 }};
 
 Expression = Comment / TagExpression;
@@ -54,20 +77,14 @@ Expression = Comment / TagExpression;
 
 TagExpression = 
 open:OpenTag
-    // enclosedString:ContentString
     contentNode:ContentNode*
 close:CloseTag
 {
     const openTagName = getTagContent(open);
     const closeTagName = getTagContent(close);
     if (openTagName !== closeTagName) { return null }
-    // if (enclosedString.join('') === "") return [...open, ...close].flat();
     if (contentNode.join('') === "") return [...open, ...close].flat();
-    // const content = {
-    //     type: CONTENT, content: enclosedString.join('')
-    // };
     return [...open, ...contentNode, ...close].flat();
-    // return [...open, content, ...close].flat();
 } / tag:Tag {
     const tagName = getTagContent(tag);
     if (singleTagsList.includes(tagName)) {
@@ -77,13 +94,19 @@ close:CloseTag
 }
 
 ContentNode = 
-    comment:Comment { return comment === null ? [] : comment } /
-    //!'<!--' 
-    contentString:ContentString {
-        console.log('ContentNode', contentString)
-        if (contentString === '') return [];
-        return [{ type: CONTENT, content: contentString}]
-    } 
+        nl1:NewLine*
+        comment:Comment
+        nl2:NewLine*
+        { return comment === null ? [] : comment }
+    /
+        nl3:NewLine*
+        contentString:ContentString
+        nl4:NewLine*
+        {
+            console.log('ContentNode', contentString)
+            if (contentString === '') return [];
+            return [{ type: CONTENT, content: contentString}]
+        } 
 
 
 OpenTag = 
@@ -158,11 +181,7 @@ AttributeTail = afterAttributeSpace:WhiteSpaces? "=" beforeValueSpace:WhiteSpace
 
 Tag = open:OpenTag { return open } / close:CloseTag { return close }
 
-// ContentString = [^<>]+ / "" { return text() };
 ContentString = [^<>]+ { return text() };
-// ContentString = !"<" !">" t:.+ { return t.join('')} / & "<" {return ''}
-// Here is the problem of no compiling. Attempt to match '' or a non 
-// input consuming operator is a disaster
 
 AttributeName = predecator:Name tail:(Dash AttributeNameTail)* {
     const concatenatedTail = concatTail(tail)
@@ -194,18 +213,10 @@ FloatingPointTail = dot:[.] fraction:[0-9]+ {
 }
 
 Comment = '<!--' content:(!"-->" i:. {return i})* '-->' {
-    const result = [
-        {type: COMMENT, content: `<!--${content.join('')}-->`}
-    ];
+    const result = [ getComment(content) ];
     console.log('Comment', result)
     return result;
 }
-
-// Comment = '<!--' content:TextUntilCommentTermination '-->' {
-//     return [
-//         {type: COMMENT, content: `<!--${content}-->`}
-//     ]
-// }
 
 TextUntilCommentTermination = content:(!CommentTerminationAhead .)* { return content.map(_ => _[1])}
 
@@ -218,31 +229,18 @@ Name = [a-zA-Z]+ { return text() };
 _ "whitespace"
   = [ \t\n\r]*
 
-// S = t:[\t] / n:[\n] / r:[\r] / s:[" "] {
-//     if(n) return {
-//         type: NEW_LINE,
-//         content:'',
-//     }
-// }
+NewLine = [\n] {
+    return {
+        type: NEW_LINE,
+        content: '',
+    }
+}
 
 S = space:[ \t\n\r] {
-    if(space.match(/\n/)) return {
-        type: NEW_LINE,
-        content:'',
-    }
-    if(space === " ") return {
-        type: SPACE,
-        content: ' ',
-    }
-    if(space.match(/\t/)) return {
-        type: TAB,
-        content: "/t"
-    }
-    if(space.match(/\r/)) return {
-        type: TAB,
-        content: "/r"
-    }
-
+    if(space.match(/\n/)) return getNewLine();
+    if(space === " ") return getSpace();
+    if(space.match(/\t/)) return getTabulation();
+    if(space.match(/\r/)) return getReturnC();
 }
 
 WhiteSpaces = whiteSpaces:S* {
