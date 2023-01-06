@@ -259,7 +259,7 @@ function peg$parse(input, options) {
   var peg$c10 = "<!--";
   var peg$c11 = "-->";
 
-  var peg$r0 = /^[^<>]/;
+  var peg$r0 = /^[^\n<>]/;
   var peg$r1 = /^[a-zA-Z0-9]/;
   var peg$r2 = /^[^']/;
   var peg$r3 = /^[^"]/;
@@ -276,7 +276,7 @@ function peg$parse(input, options) {
   var peg$e2 = peg$literalExpectation(">", false);
   var peg$e3 = peg$literalExpectation("/", false);
   var peg$e4 = peg$literalExpectation("=", false);
-  var peg$e5 = peg$classExpectation(["<", ">"], true, false);
+  var peg$e5 = peg$classExpectation(["\n", "<", ">"], true, false);
   var peg$e6 = peg$classExpectation([["a", "z"], ["A", "Z"], ["0", "9"]], false, false);
   var peg$e7 = peg$literalExpectation("true", false);
   var peg$e8 = peg$literalExpectation("false", false);
@@ -311,11 +311,21 @@ function peg$parse(input, options) {
     }
     return null;
 };
-  var peg$f2 = function(nl1, comment, nl2) { return comment === null ? [] : comment };
+  var peg$f2 = function(nl1, comment, nl2) {
+            const result = buildParseArray([
+                nl1 ? nl1.map(getNewLine) : null,
+                comment ? comment : null,
+                nl2 ? nl2.map(getNewLine) : null,
+            ])
+            return result
+        };
   var peg$f3 = function(nl3, contentString, nl4) {
-            console.log('ContentNode', contentString)
-            if (contentString === '') return [];
-            return [{ type: CONTENT, content: contentString}]
+            const result = buildParseArray([
+                nl3 ? nl3.map(getNewLine) : null,
+                contentString === '' ? [] : { type: CONTENT, content: contentString },
+                nl4 ? nl4.map(getNewLine) : null,
+            ])
+            return result;
         };
   var peg$f4 = function(beforeBracketSpace, beforeNameSpace, openTagName, afterNameSpace, attributes, afterBracketSpace) {
         const openTag = procesTag({
