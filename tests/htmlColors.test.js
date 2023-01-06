@@ -26,10 +26,10 @@ describe('Testing htmlColors', () => {
         expect(result).toEqual(expected);
     })
 
-    it('Should return null for just an opening tag', () => {
+    it('Should return [] for just an opening tag', () => {
         const input = '<div>';
         const result = peggy.parse(input);
-        expect(result).toBeNull();
+        expect(result).toEqual([]);
     })
 
     it('Should process a single tag if it is a special tag', () => {
@@ -140,10 +140,10 @@ describe('Testing htmlColors', () => {
         expect(result).toEqual(expected);  
     })
 
-    it('Should return null in case open tag is different than closing tag', () => {
+    it('Should return [] in case open tag is different than closing tag', () => {
         const input = '<i>my content</b>'
         const result = peggy.parse(input);
-        expect(result).toBeNull();
+        expect(result).toEqual([]);
     })
 
     it('Should parse an attribute with no value correctly', () => {
@@ -523,12 +523,6 @@ my content
         ]
         const result = peggy.parse(input);
         expect(result).toEqual(expected)
-                        // const peggy = {
-        //     SyntaxError: peg$SyntaxError,
-        //     parse: peg$parse
-        //   }
-          
-        //   export { peggy };
     })
 
     it('Should process comment when placed between close and opening tag', () => {
@@ -549,8 +543,15 @@ my content
             { content: '/', type: BRACKET },
             { content: 'div', type: TAG },
             { content: '>', type: BRACKET },
-
         ]
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected)
+                        // const peggy = {
+        //     SyntaxError: peg$SyntaxError,
+        //     parse: peg$parse
+        //   }
+          
+        //   export { peggy };
     })
 
     it('Should process multiple comment when placed between close and opening tag', () => {

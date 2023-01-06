@@ -72,8 +72,20 @@
     }
 }};
 
-Expression = Comment / TagExpression;
+// Expression = Comment / TagExpression;
+Expression = Comment / t:TagWithContent* {return t.flat()};
 
+TagWithContent = 
+    beforeContent:ContentNode*
+    exp:TagExpression
+    afterContent:ContentNode*
+    {
+        return buildParseArray([
+            ...beforeContent,
+            exp,
+            ...afterContent,
+        ])
+    }
 
 TagExpression = 
 open:OpenTag
