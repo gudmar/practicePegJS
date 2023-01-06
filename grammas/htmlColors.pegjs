@@ -97,16 +97,32 @@ ContentNode =
         nl1:NewLine*
         comment:Comment
         nl2:NewLine*
-        { return comment === null ? [] : comment }
+        // { return comment === null ? [] : comment }
+        {
+            const result = buildParseArray([
+                nl1 ? nl1.map(getNewLine) : null,
+                comment ? comment : null,
+                nl2 ? nl2.map(getNewLine) : null,
+            ])
+            return result
+        }
     /
         nl3:NewLine*
         contentString:ContentString
         nl4:NewLine*
+        // {
+        //     console.log('ContentNode', contentString)
+        //     if (contentString === '') return [];
+        //     return [{ type: CONTENT, content: contentString}]
+        // } 
         {
-            console.log('ContentNode', contentString)
-            if (contentString === '') return [];
-            return [{ type: CONTENT, content: contentString}]
-        } 
+            const result = buildParseArray([
+                nl3 ? nl3.map(getNewLine) : null,
+                contentString === '' ? [] : { type: CONTENT, content: contentString },
+                nl4 ? nl4.map(getNewLine) : null,
+            ])
+            return result;
+        }
 
 
 OpenTag = 
@@ -181,7 +197,7 @@ AttributeTail = afterAttributeSpace:WhiteSpaces? "=" beforeValueSpace:WhiteSpace
 
 Tag = open:OpenTag { return open } / close:CloseTag { return close }
 
-ContentString = [^<>]+ { return text() };
+ContentString = [^\n<>]+ { return text() };
 
 AttributeName = predecator:Name tail:(Dash AttributeNameTail)* {
     const concatenatedTail = concatTail(tail)
