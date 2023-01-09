@@ -72,8 +72,7 @@
     }
 }};
 
-// Expression = Comment / TagExpression;
-Expression = Comment / t:TagWithContent* {return t.flat()};
+Expression = Comment / t:TagWithContent* {return t.flat()} / TagExpression
 
 TagWithContent = 
     beforeContent:ContentNode*
@@ -135,11 +134,36 @@ ContentNode =
             ])
             return result;
         }
+    // /
+    //     nlBefore:NewLine*
+    //     // !'</'
+    //     !SingleTag
+    //     tags:TagExpression
+    //     nlAfter:NewLine* {
+    //         const result = buildParseArray([
+    //             nlBefore ? nlBefore.map(getNewLine) : null,
+    //             tags === null || tags === [] ? [] : tags,
+    //             nlAfter ? nlAfter.map(getNewLine) : null,
+    //         ])
+    //         return result
+    //     }
 
+SingleTagNames = 'br' / 'hr' / 'img' / 'input' / 'keygen' / 'link' / 
+    'meta' / 'param' / 'source' / 'track' / 'wbr'
+
+SingleTag = '<' close:'/'? name:SingleTagNames '>' {
+    return buildParseArray([
+        getLt(),
+        close ? getSlash() : null,
+        getTag(name),
+        getGt()
+    ])
+}
 
 OpenTag = 
     beforeBracketSpace:WhiteSpaces 
     "<" !'!'
+    !SingleTagNames
     beforeNameSpace:WhiteSpaces 
     openTagName:Name? 
     afterNameSpace:WhiteSpaces 
@@ -162,9 +186,10 @@ OpenTag =
 
 CloseTag = 
     beforeBracketSpace:WhiteSpaces 
-    "<" !"!" 
+    "<" !"!"
     beforeNameSpace:WhiteSpaces 
-    close:"/"? 
+    close:"/" //?
+    !SingleTagNames
     closeTagName:Name? 
     ">" 
     afterBracketSpace:WhiteSpaces 
@@ -207,7 +232,9 @@ AttributeTail = afterAttributeSpace:WhiteSpaces? "=" beforeValueSpace:WhiteSpace
     return output
 }
 
-Tag = open:OpenTag { return open } / close:CloseTag { return close }
+Tag = 
+    SingleTag
+    //open:OpenTag { return open } / close:CloseTag { return close }
 
 ContentString = [^\n<>]+ { return text() };
 

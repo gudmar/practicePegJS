@@ -1,0 +1,8 @@
+
+Document = Node*
+
+Node = unit*
+
+Unit = text / Tag / comment
+
+Tag = OpenTag Node CloseTag / SingleTag
