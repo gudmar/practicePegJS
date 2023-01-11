@@ -26,8 +26,6 @@
         R, TAB,
     } from "../constants/htmlColors.js";
 
-    // const singleTagsList = ['br', 'hr', 'img', 'input', 'keygen', 'link', 'meta', 'param', 'source', 'track', 'wbr']
-
     function getTagContent(parsedResult){
         const result = parsedResult.find((item) => item.type === TAG)
         return result?.content;
@@ -117,10 +115,7 @@ Node = txt:Text+ {
 } / comment:Comment+ {
     const result = buildParseArray(comment);
     return result;
-} 
-// / empty:' ' {
-//     return []
-// }
+} / SpaceOrMore
 
 Branch = 
     open:OpenTag
@@ -133,78 +128,6 @@ Branch =
         // if (node.join('') === "") return [...open, ...close].flat();
         return [...open, ...node, ...close].flat();
     }
-
-// Expression = Comment / t:TagWithContent* {return t.flat()} / TagExpression
-
-// TagWithContent = 
-//     beforeContent:ContentNode*
-//     exp:TagExpression
-//     afterContent:ContentNode*
-//     {
-//         return buildParseArray([
-//             ...beforeContent,
-//             exp,
-//             ...afterContent,
-//         ])
-//     }
-
-// TagExpression = 
-// open:OpenTag
-//     contentNode:ContentNode*
-// close:CloseTag
-// {
-//     const openTagName = getTagContent(open);
-//     const closeTagName = getTagContent(close);
-//     if (openTagName !== closeTagName) { return null }
-//     if (contentNode.join('') === "") return [...open, ...close].flat();
-//     return [...open, ...contentNode, ...close].flat();
-// } / tag:Tag {
-//     const tagName = getTagContent(tag);
-//     if (singleTagsList.includes(tagName)) {
-//         return tag
-//     }
-//     return null;
-// }
-
-// ContentNode = 
-//         nl1:NewLine*
-//         comment:Comment
-//         nl2:NewLine*
-//         // { return comment === null ? [] : comment }
-//         {
-//             const result = buildParseArray([
-//                 nl1 ? nl1.map(getNewLine) : null,
-//                 comment ? comment : null,
-//                 nl2 ? nl2.map(getNewLine) : null,
-//             ])
-//             return result
-//         }
-//     /
-//         nl3:NewLine*
-//         contentString:ContentString
-//         nl4:NewLine*
-
-//         {
-//             const result = buildParseArray([
-//                 nl3 ? nl3.map(getNewLine) : null,
-//                 contentString === '' ? [] : { type: CONTENT, content: contentString },
-//                 nl4 ? nl4.map(getNewLine) : null,
-//             ])
-//             return result;
-//         }
-//     // /
-//     //     nlBefore:NewLine*
-//     //     // !'</'
-//     //     !SingleTag
-//     //     tags:TagExpression
-//     //     nlAfter:NewLine* {
-//     //         const result = buildParseArray([
-//     //             nlBefore ? nlBefore.map(getNewLine) : null,
-//     //             tags === null || tags === [] ? [] : tags,
-//     //             nlAfter ? nlAfter.map(getNewLine) : null,
-//     //         ])
-//     //         return result
-//     //     }
 
 SingleTagNames = 'br' / 'hr' / 'img' / 'input' / 'keygen' / 'link' / 
     'meta' / 'param' / 'source' / 'track' / 'wbr'
@@ -290,12 +213,6 @@ AttributeTail = afterAttributeSpace:WhiteSpaces? "=" beforeValueSpace:WhiteSpace
     return output
 }
 
-// Tag = 
-//     SingleTag
-//     //open:OpenTag { return open } / close:CloseTag { return close }
-
-// ContentString = [^\n<>]+ { return text() };
-// Text = [^\n<>]+ { return text() };
 Text = txt:([^\n<>]+ {return text()}) { return getTextContent(txt)}
 
 AttributeName = predecator:Name tail:(Dash AttributeNameTail)* {
@@ -333,23 +250,9 @@ Comment = '<!--' content:(!"-->" i:. {return i})* '-->' {
     return result;
 }
 
-// TextUntilCommentTermination = content:(!CommentTerminationAhead .)* { return content.map(_ => _[1])}
-
-// CommentTerminationAhead = . ('-->')
-
 Dash = [-_]+ { return text() }
 
 Name = chars:[a-zA-Z]+ { return text() };
-
-// _ "whitespace"
-//   = [ \t\n\r]*
-
-// NewLine = [\n] {
-//     return {
-//         type: NEW_LINE,
-//         content: '',
-//     }
-// }
 
 Space = space:[ \t\n\r] {
     if(space.match(/\n/)) return getNewLine();
@@ -357,15 +260,14 @@ Space = space:[ \t\n\r] {
     if(space.match(/\t/)) return getTabulation();
     if(space.match(/\r/)) return getReturnC();
     console.error('Spaces: no pattern matched');
-    // return [];
 }
 
 WhiteSpaces = whiteSpaces:Space* {
     const result = buildParseArray(whiteSpaces);
     return result;
-    // return whiteSpaces.reduce((acc, symb) => {
-    //     if (symb) acc.push(symb)
+}
 
-    //     return acc;
-    // }, []);
+SpaceOrMore = whiteSpaces:Space+ {
+    const result = buildParseArray(whiteSpaces);
+    return result;
 }
