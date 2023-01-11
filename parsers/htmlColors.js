@@ -10,8 +10,6 @@
         R, TAB,
     } from "../constants/htmlColors.js";
 
-    // const singleTagsList = ['br', 'hr', 'img', 'input', 'keygen', 'link', 'meta', 'param', 'source', 'track', 'wbr']
-
     function getTagContent(parsedResult){
         const result = parsedResult.find((item) => item.type === TAG)
         return result?.content;
@@ -350,13 +348,15 @@ function peg$parse(input, options) {
         // if (node.join('') === "") return [...open, ...close].flat();
         return [...open, ...node, ...close].flat();
     };
-  var peg$f6 = function(close, name) {
+  var peg$f6 = function(close, name, afterNameSpace, attributes) {
     return buildParseArray([
         getLt(),
         close ? getSlash() : null,
         getTag(name),
+        afterNameSpace,
+        attributes,
         getGt()
-    ])
+    ].flat())
 };
   var peg$f7 = function(beforeBracketSpace, beforeNameSpace, openTagName, afterNameSpace, attributes, afterBracketSpace) {
         const openTag = procesTag({
@@ -436,16 +436,10 @@ function peg$parse(input, options) {
     if(space.match(/\t/)) return getTabulation();
     if(space.match(/\r/)) return getReturnC();
     console.error('Spaces: no pattern matched');
-    // return [];
 };
   var peg$f26 = function(whiteSpaces) {
     const result = buildParseArray(whiteSpaces);
     return result;
-    // return whiteSpaces.reduce((acc, symb) => {
-    //     if (symb) acc.push(symb)
-
-    //     return acc;
-    // }, []);
 };
   var peg$f27 = function(whiteSpaces) {
     const result = buildParseArray(whiteSpaces);
@@ -834,7 +828,7 @@ function peg$parse(input, options) {
   }
 
   function peg$parseSingleTag() {
-    var s0, s1, s2, s3, s4;
+    var s0, s1, s2, s3, s4, s5, s6;
 
     s0 = peg$currPos;
     if (input.charCodeAt(peg$currPos) === 60) {
@@ -857,16 +851,23 @@ function peg$parse(input, options) {
       }
       s3 = peg$parseSingleTagNames();
       if (s3 !== peg$FAILED) {
+        s4 = peg$parseWhiteSpaces();
+        s5 = [];
+        s6 = peg$parseAttributeChainElement();
+        while (s6 !== peg$FAILED) {
+          s5.push(s6);
+          s6 = peg$parseAttributeChainElement();
+        }
         if (input.charCodeAt(peg$currPos) === 62) {
-          s4 = peg$c13;
+          s6 = peg$c13;
           peg$currPos++;
         } else {
-          s4 = peg$FAILED;
+          s6 = peg$FAILED;
           if (peg$silentFails === 0) { peg$fail(peg$e13); }
         }
-        if (s4 !== peg$FAILED) {
+        if (s6 !== peg$FAILED) {
           peg$savedPos = s0;
-          s0 = peg$f6(s2, s3);
+          s0 = peg$f6(s2, s3, s4, s5);
         } else {
           peg$currPos = s0;
           s0 = peg$FAILED;
