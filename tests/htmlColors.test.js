@@ -494,6 +494,7 @@ comment-->`, type: COMMENT },
     })
 
     it('Should process multiple comments with multiple text when between open and close tag', () => {
+        //Jezeli po Text wystapi nowa linia i comment
         const input = `<div>
 my content
 <!--comment-->
