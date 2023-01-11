@@ -26,10 +26,10 @@ describe('Testing htmlColors', () => {
         expect(result).toEqual(expected);
     })
 
-    it('Should return [] for just an opening tag', () => {
+    it('Should throw for just an opening tag', () => {
         const input = '<div>';
-        const result = peggy.parse(input);
-        expect(result).toEqual([]);
+        const result = () => peggy.parse(input);
+        expect(result).toThrow();
     })
 
     it('Should process a single tag if it is a special tag', () => {
@@ -573,8 +573,9 @@ my content
             { content: '/', type: BRACKET },
             { content: 'div', type: TAG },
             { content: '>', type: BRACKET },
-
         ]
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected)
     })
 
     it('Should process a element with nested elements', () => {
@@ -616,7 +617,8 @@ my content
             { content: '>', type: BRACKET },
 
             { content: '<', type: BRACKET },
-            { content: '/ul', type: TAG },
+            { content: '/', type: BRACKET },
+            { content: 'ul', type: TAG },
             { content: '>', type: BRACKET },
 
             { content: '<', type: BRACKET },
@@ -625,6 +627,8 @@ my content
             { content: '>', type: BRACKET },
 
         ]
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected)
     })
 
 
