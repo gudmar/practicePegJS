@@ -1,10 +1,32 @@
+//  TypeError: Cannot read property 'split' of null
+//     at /home/witold/.nvm/versions/node/v14.15.5/lib/node_modules/peggy/lib/grammar-error.js:86:18
+//     at Array.map (<anonymous>)
+//     at GrammarError.format (/home/witold/.nvm/versions/node/v14.15.5/lib/node_modules/peggy/lib/grammar-error.js:84:30)
+//     at PeggyCLI.error (/home/witold/.nvm/versions/node/v14.15.5/lib/node_modules/peggy/bin/peggy-cli.js:355:45)
+//     at PeggyCLI.main (/home/witold/.nvm/versions/node/v14.15.5/lib/node_modules/peggy/bin/peggy-cli.js:630:12)
+//     at processTicksAndRejections (internal/process/task_queues.js:93:5)
+// Waiting for the debugger to disconnect...
+
+// Most probably caused by the fact, that I do:
+// SomeTag = n:Node*
+// Node = t:Tag*
+// In such gramma if no Node matched, null returned, then null passed to SomeTag and split with * cannot be done
+// If 
+// SomeTag = n:Node*
+// Node = t:Tag+
+// Then works, because it is promissed that at least one element will be present
+
+// And the construction with double * is not needed. * + does the job, as 
+// first one is capable of reducing nr of + to 0
+
+
 {{
     import { 
         TAG, PARAM, QUOTED, COMMENT, BRACKET, NEW_LINE, CONTENT, ASSIGN, SPACE, VAL,
         R, TAB,
     } from "../constants/htmlColors.js";
 
-    const singleTagsList = ['br', 'hr', 'img', 'input', 'keygen', 'link', 'meta', 'param', 'source', 'track', 'wbr']
+    // const singleTagsList = ['br', 'hr', 'img', 'input', 'keygen', 'link', 'meta', 'param', 'source', 'track', 'wbr']
 
     function getTagContent(parsedResult){
         const result = parsedResult.find((item) => item.type === TAG)
@@ -23,6 +45,12 @@
         return result;
     }
 
+    function getTextContent(txt) {
+        return {
+            content: txt,
+            type: CONTENT,
+        }
+    }
     function getNewLine() { return {type: NEW_LINE, content:''} }
     function getLt() { return { type: BRACKET, content: '<'} }
     function getGt() { return { type: BRACKET, content: '>'} }
@@ -72,81 +100,111 @@
     }
 }};
 
-Expression = Comment / t:TagWithContent* {return t.flat()} / TagExpression
-
-TagWithContent = 
-    beforeContent:ContentNode*
-    exp:TagExpression
-    afterContent:ContentNode*
-    {
-        return buildParseArray([
-            ...beforeContent,
-            exp,
-            ...afterContent,
-        ])
-    }
-
-TagExpression = 
-open:OpenTag
-    contentNode:ContentNode*
-close:CloseTag
-{
-    const openTagName = getTagContent(open);
-    const closeTagName = getTagContent(close);
-    if (openTagName !== closeTagName) { return null }
-    if (contentNode.join('') === "") return [...open, ...close].flat();
-    return [...open, ...contentNode, ...close].flat();
-} / tag:Tag {
-    const tagName = getTagContent(tag);
-    if (singleTagsList.includes(tagName)) {
-        return tag
-    }
-    return null;
+Document = n:Node* {
+    const result = buildParseArray(n);
+    return result;
 }
 
-ContentNode = 
-        nl1:NewLine*
-        comment:Comment
-        nl2:NewLine*
-        // { return comment === null ? [] : comment }
-        {
-            const result = buildParseArray([
-                nl1 ? nl1.map(getNewLine) : null,
-                comment ? comment : null,
-                nl2 ? nl2.map(getNewLine) : null,
-            ])
-            return result
-        }
-    /
-        nl3:NewLine*
-        contentString:ContentString
-        nl4:NewLine*
-        // {
-        //     console.log('ContentNode', contentString)
-        //     if (contentString === '') return [];
-        //     return [{ type: CONTENT, content: contentString}]
-        // } 
-        {
-            const result = buildParseArray([
-                nl3 ? nl3.map(getNewLine) : null,
-                contentString === '' ? [] : { type: CONTENT, content: contentString },
-                nl4 ? nl4.map(getNewLine) : null,
-            ])
-            return result;
-        }
-    // /
-    //     nlBefore:NewLine*
-    //     // !'</'
-    //     !SingleTag
-    //     tags:TagExpression
-    //     nlAfter:NewLine* {
-    //         const result = buildParseArray([
-    //             nlBefore ? nlBefore.map(getNewLine) : null,
-    //             tags === null || tags === [] ? [] : tags,
-    //             nlAfter ? nlAfter.map(getNewLine) : null,
-    //         ])
-    //         return result
-    //     }
+Node = txt:Text+ {
+    const result = buildParseArray(txt);
+    return result;
+} / branch:Branch+ {
+    const result = buildParseArray(branch);
+    return result;
+} / single: SingleTag+ {
+    const result = buildParseArray(single);
+    return result;
+} / comment:Comment+ {
+    const result = buildParseArray(comment);
+    return result;
+} 
+// / empty:' ' {
+//     return []
+// }
+
+Branch = 
+    open:OpenTag
+        node:Document?
+    close:CloseTag {
+        const openTagName = getTagContent(open);
+        const closeTagName = getTagContent(close);
+        if (openTagName !== closeTagName) { return [] }
+        if (!node) return [...open, ...close].flat();
+        // if (node.join('') === "") return [...open, ...close].flat();
+        return [...open, ...node, ...close].flat();
+    }
+
+// Expression = Comment / t:TagWithContent* {return t.flat()} / TagExpression
+
+// TagWithContent = 
+//     beforeContent:ContentNode*
+//     exp:TagExpression
+//     afterContent:ContentNode*
+//     {
+//         return buildParseArray([
+//             ...beforeContent,
+//             exp,
+//             ...afterContent,
+//         ])
+//     }
+
+// TagExpression = 
+// open:OpenTag
+//     contentNode:ContentNode*
+// close:CloseTag
+// {
+//     const openTagName = getTagContent(open);
+//     const closeTagName = getTagContent(close);
+//     if (openTagName !== closeTagName) { return null }
+//     if (contentNode.join('') === "") return [...open, ...close].flat();
+//     return [...open, ...contentNode, ...close].flat();
+// } / tag:Tag {
+//     const tagName = getTagContent(tag);
+//     if (singleTagsList.includes(tagName)) {
+//         return tag
+//     }
+//     return null;
+// }
+
+// ContentNode = 
+//         nl1:NewLine*
+//         comment:Comment
+//         nl2:NewLine*
+//         // { return comment === null ? [] : comment }
+//         {
+//             const result = buildParseArray([
+//                 nl1 ? nl1.map(getNewLine) : null,
+//                 comment ? comment : null,
+//                 nl2 ? nl2.map(getNewLine) : null,
+//             ])
+//             return result
+//         }
+//     /
+//         nl3:NewLine*
+//         contentString:ContentString
+//         nl4:NewLine*
+
+//         {
+//             const result = buildParseArray([
+//                 nl3 ? nl3.map(getNewLine) : null,
+//                 contentString === '' ? [] : { type: CONTENT, content: contentString },
+//                 nl4 ? nl4.map(getNewLine) : null,
+//             ])
+//             return result;
+//         }
+//     // /
+//     //     nlBefore:NewLine*
+//     //     // !'</'
+//     //     !SingleTag
+//     //     tags:TagExpression
+//     //     nlAfter:NewLine* {
+//     //         const result = buildParseArray([
+//     //             nlBefore ? nlBefore.map(getNewLine) : null,
+//     //             tags === null || tags === [] ? [] : tags,
+//     //             nlAfter ? nlAfter.map(getNewLine) : null,
+//     //         ])
+//     //         return result
+//     //     }
 
 SingleTagNames = 'br' / 'hr' / 'img' / 'input' / 'keygen' / 'link' / 
     'meta' / 'param' / 'source' / 'track' / 'wbr'
@@ -188,7 +246,7 @@ CloseTag =
     beforeBracketSpace:WhiteSpaces 
     "<" !"!"
     beforeNameSpace:WhiteSpaces 
-    close:"/" //?
+    close:"/" 
     !SingleTagNames
     closeTagName:Name? 
     ">" 
@@ -232,11 +290,13 @@ AttributeTail = afterAttributeSpace:WhiteSpaces? "=" beforeValueSpace:WhiteSpace
     return output
 }
 
-Tag = 
-    SingleTag
-    //open:OpenTag { return open } / close:CloseTag { return close }
+// Tag = 
+//     SingleTag
+//     //open:OpenTag { return open } / close:CloseTag { return close }
 
-ContentString = [^\n<>]+ { return text() };
+// ContentString = [^\n<>]+ { return text() };
+// Text = [^\n<>]+ { return text() };
+Text = txt:([^\n<>]+ {return text()}) { return getTextContent(txt)}
 
 AttributeName = predecator:Name tail:(Dash AttributeNameTail)* {
     const concatenatedTail = concatTail(tail)
@@ -273,35 +333,39 @@ Comment = '<!--' content:(!"-->" i:. {return i})* '-->' {
     return result;
 }
 
-TextUntilCommentTermination = content:(!CommentTerminationAhead .)* { return content.map(_ => _[1])}
+// TextUntilCommentTermination = content:(!CommentTerminationAhead .)* { return content.map(_ => _[1])}
 
-CommentTerminationAhead = . ('-->')
+// CommentTerminationAhead = . ('-->')
 
 Dash = [-_]+ { return text() }
 
-Name = [a-zA-Z]+ { return text() };
+Name = chars:[a-zA-Z]+ { return text() };
 
-_ "whitespace"
-  = [ \t\n\r]*
+// _ "whitespace"
+//   = [ \t\n\r]*
 
-NewLine = [\n] {
-    return {
-        type: NEW_LINE,
-        content: '',
-    }
-}
+// NewLine = [\n] {
+//     return {
+//         type: NEW_LINE,
+//         content: '',
+//     }
+// }
 
-S = space:[ \t\n\r] {
+Space = space:[ \t\n\r] {
     if(space.match(/\n/)) return getNewLine();
     if(space === " ") return getSpace();
     if(space.match(/\t/)) return getTabulation();
     if(space.match(/\r/)) return getReturnC();
+    console.error('Spaces: no pattern matched');
+    // return [];
 }
 
-WhiteSpaces = whiteSpaces:S* {
-    return whiteSpaces.reduce((acc, symb) => {
-        if (symb) acc.push(symb)
+WhiteSpaces = whiteSpaces:Space* {
+    const result = buildParseArray(whiteSpaces);
+    return result;
+    // return whiteSpaces.reduce((acc, symb) => {
+    //     if (symb) acc.push(symb)
 
-        return acc;
-    }, []);
+    //     return acc;
+    // }, []);
 }

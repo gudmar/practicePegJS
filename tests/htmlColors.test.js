@@ -617,7 +617,8 @@ my content
             { content: '>', type: BRACKET },
 
             { content: '<', type: BRACKET },
-            { content: '/ul', type: TAG },
+            { content: '/', type: BRACKET },
+            { content: 'ul', type: TAG },
             { content: '>', type: BRACKET },
 
             { content: '<', type: BRACKET },
