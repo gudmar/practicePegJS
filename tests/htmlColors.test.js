@@ -547,12 +547,6 @@ my content
         ]
         const result = peggy.parse(input);
         expect(result).toEqual(expected)
-                        // const peggy = {
-        //     SyntaxError: peg$SyntaxError,
-        //     parse: peg$parse
-        //   }
-          
-        //   export { peggy };
     })
 
     it('Should process multiple comment when placed between close and opening tag', () => {
@@ -660,13 +654,13 @@ my content
             { content: ' ', type: SPACE },
             { content: 'data-id', type: PARAM },
             { content: '=', type: ASSIGN },
-            { content: 1, type: VAL },
+            { content: '1', type: VAL },
             { content: '>', type: BRACKET },
 
             { content: '<', type: BRACKET },
             { content: 'i', type: TAG },
             { content: '>', type: BRACKET },
-            { content: '<!--comment->', type: COMMENT},
+            { content: '<!--comment-->', type: COMMENT},
             { content: 'italic', type: CONTENT },
             { content: '<', type: BRACKET },
             { content: '/', type: BRACKET },
@@ -693,39 +687,42 @@ my content
             { content: '>', type: BRACKET },
 
             { content: '<', type: BRACKET },
-            { content: '/ul', type: TAG },
+            { content: '/', type: BRACKET },
+            { content: 'ul', type: TAG },
             { content: '>', type: BRACKET },
 
             { content: '<', type: BRACKET },
             { content: '/', type: BRACKET },
             { content: 'div', type: TAG },
             { content: '>', type: BRACKET },
-
         ]
+
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected)
+
     })
 
 
     it('Should process a longer fragment correcty', () => {
-        const input = `
-        <div style="color: red" class="some-class">
-        <span>Title</span> <!-- comment -->
-        <a 
-            data-custom = "My custom data content 
-            more lines"
-        >
-            Some multiline
-            text
-        </a>
-        `
+        const input = 
+`<div style="color: red" class="some-class">
+<span>Title</span> <!-- comment -->
+<a
+    data-custom = "My custom data content 
+    more lines"
+>
+    Some multiline
+    text
+</a>
+</div>`
         const expected = [
             { content: '<', type: BRACKET },
             { content: 'div', type: TAG },
-            { content: '', type: SPACE },
+            { content: ' ', type: SPACE },
             { content: 'style', type: PARAM },
             { content: '=', type: ASSIGN },
-            { content: '', type: SPACE },
-            { content: '"color: red"', type: VAL},
-            { content: '', type: SPACE },
+            { content: 'color: red', type: VAL},
+            { content: ' ', type: SPACE },
             { content: 'class', type: PARAM },
             { content: '=', type: ASSIGN },
             { content: 'some-class', type: VAL},
@@ -740,33 +737,60 @@ my content
             { content: '/', type: BRACKET },
             { content: 'span', type: TAG },
             { content: '>', type: BRACKET },
-            { content: '', type: SPACE },
+            { content: ' ', type: SPACE },
             { content: '<!-- comment -->', type: COMMENT },
             { content: '', type: NEW_LINE },
 
             { content: '<', type: BRACKET },
             { content: 'a', type: TAG },
             { content: '', type: NEW_LINE },
+            { content: ' ', type: SPACE },
+            { content: ' ', type: SPACE },
+            { content: ' ', type: SPACE },
+            { content: ' ', type: SPACE },
             { content: 'data-custom', type: PARAM },
-            { content: '', type: SPACE },
+            { content: ' ', type: SPACE },
             { content: '=', type: ASSIGN },
-            { content: '', type: SPACE },
-            { content: 'My custom data content ', type: CONTENT },
-            { content: '', type: NEW_LINE },
-            { content: 'more lines', type: CONTENT },
+            { content: ' ', type: SPACE },
+            { content: `My custom data content 
+    more lines`, type: VAL },
             { content: '', type: NEW_LINE },
             { content: '>', type: BRACKET },
             { content: '', type: NEW_LINE },
+            { content: ' ', type: SPACE },
+            { content: ' ', type: SPACE },
+            { content: ' ', type: SPACE },
+            { content: ' ', type: SPACE },
             { content: 'Some multiline', type: CONTENT },
             { content: '', type: NEW_LINE },
+            { content: ' ', type: SPACE },
+            { content: ' ', type: SPACE },
+            { content: ' ', type: SPACE },
+            { content: ' ', type: SPACE },
             { content: 'text', type: CONTENT },
             { content: '', type: NEW_LINE },
             { content: '<', type: BRACKET },
             { content: '/', type: BRACKET },
             { content: 'a', type: TAG },
             { content: '>', type: BRACKET },
+            { content: '', type: NEW_LINE },
+
+            { content: '<', type: BRACKET },
+            { content: '/', type: BRACKET },
+            { content: 'div', type: TAG },
+            { content: '>', type: BRACKET },
 
         ]
+
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected)
+
+                                // const peggy = {
+        //     SyntaxError: peg$SyntaxError,
+        //     parse: peg$parse
+        //   }
+          
+        //   export { peggy };
     })
 
     
