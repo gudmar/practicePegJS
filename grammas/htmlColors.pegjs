@@ -132,13 +132,22 @@ Branch =
 SingleTagNames = 'br' / 'hr' / 'img' / 'input' / 'keygen' / 'link' / 
     'meta' / 'param' / 'source' / 'track' / 'wbr'
 
-SingleTag = '<' close:'/'? name:SingleTagNames '>' {
+SingleTag = 
+    '<'
+    close:'/'?
+    name:SingleTagNames
+    afterNameSpace:WhiteSpaces 
+    attributes:AttributeChainElement*
+    '>'
+    {
     return buildParseArray([
         getLt(),
         close ? getSlash() : null,
         getTag(name),
+        afterNameSpace,
+        attributes,
         getGt()
-    ])
+    ].flat())
 }
 
 OpenTag = 

@@ -793,5 +793,40 @@ my content
         //   export { peggy };
     })
 
+    it('Should process a single img tag with no closing', () => {
+        const input = '<img>'
+        const expected = [
+            { content: '<', type: BRACKET },
+            { content: 'img', type: TAG },
+            { content: '>', type: BRACKET },
+        ]
+
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected)
+    })
+
+    it('Should process a single img tag with no closing with src and alt attributes', () => {
+        const input = '<img src = "../../images/photo1.png" alt="flower">'
+        const expected = [
+            { content: '<', type: BRACKET },
+            { content: 'img', type: TAG },
+            { content: ' ', type: SPACE },
+            { content: 'src', type: PARAM },
+            { content: ' ', type: SPACE },
+            { content: '=', type: ASSIGN },
+            { content: ' ', type: SPACE },
+            { content: `../../images/photo1.png`, type: VAL },
+            { content: ' ', type: SPACE },
+            { content: 'alt', type: PARAM },
+            { content: '=', type: ASSIGN },
+            { content: `flower`, type: VAL },
+            { content: '>', type: BRACKET },
+        ]
+
+        const result = peggy.parse(input);
+        expect(result).toEqual(expected)
+    })
+
+
     
 });
